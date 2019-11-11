@@ -290,10 +290,9 @@ func (_escStaticFS) prepare(name string) (*_escFile, error) {
 	}
 	var err error
 	f.name = path.Base(name)
-	if f.size == 0 {
-		return nil, fmt.Errorf("size 0")
+	if f.size > 0 {
+		f.data, err = base64.StdEncoding.DecodeString(f.compressed)
 	}
-	f.data, err = base64.StdEncoding.DecodeString(f.compressed)
 	if err != nil {
 		return nil, err
 	}
