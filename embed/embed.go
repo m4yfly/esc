@@ -218,20 +218,9 @@ func canonicFileName(fname, prefix string) string {
 }
 
 func (f *_escFile) fillCompressed(gzipLevel int) error {
-	var buf bytes.Buffer
-	gw, err := gzip.NewWriterLevel(&buf, gzipLevel)
-	if err != nil {
-		return err
-	}
-	if _, err := gw.Write(f.Data); err != nil {
-		return err
-	}
-	if err := gw.Close(); err != nil {
-		return err
-	}
 	var b bytes.Buffer
 	b64 := base64.NewEncoder(base64.StdEncoding, &b)
-	b64.Write(buf.Bytes())
+	b64.Write(f.Data)
 	b64.Close()
 	res := "\n"
 	chunk := make([]byte, 80)
@@ -300,19 +289,11 @@ func (_escStaticFS) prepare(name string) (*_escFile, error) {
 		return nil, os.ErrNotExist
 	}
 	var err error
-	f.once.Do(func() {
-		f.name = path.Base(name)
-		if f.size == 0 {
-			return
-		}
-		var gr *gzip.Reader
-		b64 := base64.NewDecoder(base64.StdEncoding, bytes.NewBufferString(f.compressed))
-		gr, err = gzip.NewReader(b64)
-		if err != nil {
-			return
-		}
-		f.data, err = ioutil.ReadAll(gr)
-	})
+	f.name = path.Base(name)
+	if f.size == 0 {
+		return nil, fmt.Errorf("size 0")
+	}
+	f.data, err = base64.StdEncoding.DecodeString(f.compressed)
 	if err != nil {
 		return nil, err
 	}
