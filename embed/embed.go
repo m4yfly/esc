@@ -283,6 +283,9 @@ func (_escLocalFS) Open(name string) (http.File, error) {
 	return os.Open(f.local)
 }
 
+var baseDbuf = make([]byte, 15000)
+var decoder = base64.StdEncoding
+
 func (_escStaticFS) prepare(name string) (*_escFile, error) {
 	f, present := _escData[path.Clean(name)]
 	if !present {
@@ -291,7 +294,15 @@ func (_escStaticFS) prepare(name string) (*_escFile, error) {
 	var err error
 	f.name = path.Base(name)
 	if f.size > 0 {
-		f.data, err = base64.StdEncoding.DecodeString(f.compressed)
+		n, err := decoder.Decode(baseDbuf, []byte(f.compressed))
+		if err != nil {
+			return nil, err
+		}
+		// > baseDbuf
+		if n >= 15000 {
+			panic("too long for baseDbuf")
+		}
+		f.data = baseDbuf[:n]
 	}
 	if err != nil {
 		return nil, err
